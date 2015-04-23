@@ -1216,7 +1216,11 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
             ret->u.binop.left = convertedNode;
          } 
          ret->type = ty_build_basic(TYSIGNEDLONGINT);       
-         break;
+        //Maximus added
+	 EXPR convertedNode = make_un_expr(CONVERT_OP, ret);
+	 convertedNode->type = ty_build_basic(TYSIGNEDCHAR);
+	 ret = convertedNode;
+	break;
       case ASSIGN_OP:
 		  //error("in assign op, LEFT%d, RIGHT%d", left_type, right_type);
 		  if(left_type != right_type){

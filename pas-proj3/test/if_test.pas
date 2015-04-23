@@ -48,7 +48,7 @@ begin
    b := 0;
    c := 1;
 
-   (*if a > b then
+   if a > b then
       print_oops
    else begin
       if b = c+a then begin
@@ -59,7 +59,7 @@ begin
       end else
 	 print_oops;
       print_is
-   end;*)
+   end;
 
    print_grooviest;
 

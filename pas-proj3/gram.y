@@ -659,7 +659,7 @@ conditional_statement:
 
 simple_if:
     LEX_IF boolean_expression LEX_THEN 
-                          { 
+                          {error("ty_query = %d",ty_query($2->type)); 
                             /* If boolean_expression is a boolean */
                             if(ty_query($2->type) == TYSIGNEDCHAR){
                                 char *end_if = new_symbol();
@@ -667,18 +667,21 @@ simple_if:
                                 encode_expr($2);
                                 b_cond_jump(TYSIGNEDCHAR, B_ZERO, end_if);
                                 $<y_string>$ = end_if;
-                            }
+                            }else {
+				error("Non-Boolean expression");
+			    }
                           } 
-                          statement { b_label($<y_string>4); }
+       			 statement { $$ = $<y_string>4; }
   ;
 
 if_statement:
     simple_if LEX_ELSE {  char* end_else = new_symbol();
                           b_jump(end_else);
+			  b_label($1);
                           $<y_string>$ = end_else;
                         }
                         statement { b_label($<y_string>3); }
-  | simple_if %prec prec_if {/* Fenner said we won't use this */}
+  | simple_if { b_label($1); } %prec prec_if {/* Fenner said we won't use this */}
   ;
 
 case_statement:
@@ -874,7 +877,7 @@ static_expression:
   ;
 
 boolean_expression:
-    expression {}
+    expression { $$ = $1; }
   ;
 
 expression: //type is expression
