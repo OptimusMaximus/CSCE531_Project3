@@ -57,7 +57,10 @@
  */
 
 %{
-
+#include "defs.h"
+#include "types.h"
+#include "symtab.h"
+#include "backend-x86.h"
 #include "tree.h"
 #include "encode.h"
 #include "message.h"
@@ -95,8 +98,8 @@ void yyerror(const char *);
     VAR_ID_LIST  y_varidlist;
     FUNC_HEADING y_funchead;
     DIRECTIVE 	 y_dir;
-    EXPR	 	 y_expr;
-    EXPR_LIST	 y_exprlist;
+    EXPR	 	     y_expr;
+    EXPR_LIST	   y_exprlist;
     EXPR_NULLOP  y_nullop;
     EXPR_UNOP    y_unop;
     EXPR_BINOP   y_binop;
@@ -122,6 +125,8 @@ void yyerror(const char *);
 %type <y_dir> directive directive_list
 %type <y_cint> variable_declaration_part variable_declaration_list
 %type <y_cint> variable_declaration simple_decl any_decl any_declaration_part function_declaration
+%type <y_string> simple_if if_statement case_statement conditional_statement
+%type <y_expr> boolean_expression
 
 %type <y_expr> unsigned_number number constant constant_literal
 %type <y_expr> expression actual_parameter static_expression
@@ -653,16 +658,31 @@ conditional_statement:
   ;
 
 simple_if:
-    LEX_IF boolean_expression LEX_THEN statement
+    LEX_IF boolean_expression LEX_THEN 
+                          { 
+                            /* If boolean_expression is a boolean */
+                            if(ty_query($2->type) == TYSIGNEDCHAR){
+                                char *end_if = new_symbol();
+                                /*encode the boolean expression */
+                                encode_expr($2);
+                                b_cond_jump(TYSIGNEDCHAR, B_ZERO, end_if);
+                                $<y_string>$ = end_if;
+                            }
+                          } 
+                          statement { b_label($<y_string>4); }
   ;
 
 if_statement:
-    simple_if LEX_ELSE statement
-  | simple_if %prec prec_if
+    simple_if LEX_ELSE {  char* end_else = new_symbol();
+                          b_jump(end_else);
+                          $<y_string>$ = end_else;
+                        }
+                        statement { b_label($<y_string>3); }
+  | simple_if %prec prec_if {/* Fenner said we won't use this */}
   ;
 
 case_statement:
-    LEX_CASE expression LEX_OF case_element_list optional_semicolon_or_else_branch LEX_END
+    LEX_CASE expression LEX_OF case_element_list optional_semicolon_or_else_branch LEX_END {/*TODO: Add for cases */}
   ;
 
 optional_semicolon_or_else_branch:
