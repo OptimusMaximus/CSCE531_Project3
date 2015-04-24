@@ -19,7 +19,6 @@
            Finland
 
            Peter Gerwinski <peter@gerwinski.de>
-           Essen, Germany
 
            Bill Cox <bill@cygnus.com> (error recovery rules)
 
@@ -127,7 +126,7 @@ void yyerror(const char *);
 %type <y_dir> directive directive_list
 %type <y_cint> variable_declaration_part variable_declaration_list
 %type <y_cint> variable_declaration simple_decl any_decl any_declaration_part function_declaration
-%type <y_string> simple_if if_statement case_statement conditional_statement
+%type <y_string> simple_if if_statement while_statement case_statement conditional_statement
 %type <y_expr> boolean_expression
 %type <y_valuelist> case_constant_list one_case_constant
 %type <y_caserec> case_element_list case_element
@@ -668,7 +667,7 @@ conditional_statement:
 
 simple_if:
     LEX_IF boolean_expression LEX_THEN 
-                          {error("ty_query = %d",ty_query($2->type)); 
+                          {//error("ty_query = %d",ty_query($2->type)); 
                             /* If boolean_expression is a boolean */
                             if(ty_query($2->type) == TYSIGNEDCHAR){
                                 char *end_if = new_symbol();
@@ -727,7 +726,23 @@ repeat_statement:
   ;
 
 while_statement:
-    LEX_WHILE boolean_expression LEX_DO statement
+    LEX_WHILE boolean_expression LEX_DO { if (ty_query($2->type) == TYSIGNEDCHAR) {
+                                             new_exit_label();
+                                             char* start_while = new_symbol();
+                                             b_label(start_while);
+                                             encode_expr($2);
+                                             $<y_string>$ = start_while;
+                                             b_cond_jump(TYSIGNEDCHAR,B_ZERO,current_exit_label());
+                                          }
+                                          else {
+                                             error("Non-Boolean expression");
+                                          }
+                                        }
+    statement                    { if (ty_query($2->type) == TYSIGNEDCHAR) {
+                                      b_jump($<y_string>4); //jumps to start of loop
+                                      b_label(old_exit_label());
+                                   }
+                                 }
   ;
 
 for_statement:
