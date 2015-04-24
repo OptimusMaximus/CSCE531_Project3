@@ -98,6 +98,36 @@ typedef struct exprnode {
 		} fcall;
     } u;
 } EXPR_NODE, *EXPR;
+
+/* Stores the type and the low and high values used in a case constant
+   (assumed to be a subrange).  If the constant is a single value, then the
+   high and low values are both set to this value. */
+typedef struct val_node {
+    long lo, hi;
+    TYPETAG type;
+    struct val_node * next;
+} VAL_LIST_REC, *VAL_LIST;
+
+/* Record for holding attributes of a case statement on the semantic stack.
+   One such record is used per case statement.
+   Fields:
+       type: the type of the case expression
+       label: the exit label for the case statement (a fresh label)
+       values: the linked list of case constants (initially empty)
+   This record is initialized and placed on the semantic stack in an
+   intermediate action in the case_statement production, after LEX_OF but
+   before any case_element's.  The list of case constants is built up
+   inside each case_element.  Alternatively, one could use a global
+   stack of CASE_RECORDs instead of using the semantic stack.  (A stack is
+   required because case statements can be nested, and information for an
+   inner case statement and its surrounding case statement should be kept
+   separate.
+*/
+typedef struct {
+	TYPETAG type;
+	char * label;
+	VAL_LIST values;
+} CASE_REC;
    
 TYPE build_unresolved_pointer(TYPE ret_type, TYPE object);
 
@@ -173,5 +203,89 @@ EXPR check_func_or_proc_or_assign(EXPR lhs, ST_ID id, EXPR rhs);
 BOOLEAN is_lval(EXPR expr);
 
 TYPE check_subrange(EXPR lo, EXPR hi);
+
+/* Project 3 */
+
+/* Returns the number of possible values of the given type, assumed to be
+   an integral (ordinal) type smaller than long (usually a subrange).
+   Also sets the output parameter low to the lowest possible value of the
+   given type.
+   Used to compute offsets and element sizes in array accesses.  Return
+   value can also be used in size_of() to help find the size of an array.
+*/
+unsigned long get_value_range(TYPE type, long * low);
+
+
+/* gram: variable_or_function_access_no_id (6th production)
+   Returns a new ARRAY_ACCESS expr with the given array (in u.fcall.function)
+   and given list of indices (in u.fcall.args).  These fields are "borrowed"
+   from the function call expression.  Checks that the array is of array type
+   (tag TYARRAY), else error.  Gets the r-value of each index expression, then
+   unary converts it.  Also checks that the type of each index expression
+   (after unary conversion) matches the corresponding "formal" index type
+   (after base types are substituted for subranges), else error.  Also checks
+   that the number of index expressions matches that of the array type.
+
+   Note: things of array type are always l-values in Pascal, although they
+   are always r-values in C.  Array accesses are always l-values (in both
+   languages).
+*/
+EXPR make_array_access_expr(EXPR array, EXPR_LIST indices);
+
+
+/* gram: one_case_constant (both productions), case_statement (intermediate action after LEX_OF, just to make an inital dummy record)
+   Returns a new VAL_LIST node with the given information for a single case
+   constant (obtained from an earlier call or calls to get_case_value()).
+*/
+VAL_LIST new_case_value(TYPETAG type, long lo, long hi);
+
+
+/* gram: case_element (intermediate action after ':')
+   Parameters:
+       type: the type of the case expression
+       vals: the list of current case constants
+       prev_vals: the list of all previous case constants (for previous
+           case elements)
+   For each case constant on the vals list: Checks that its type (of both low
+   and high values if subrange) matches that of the case expression, and if a
+   subrange, checks that the low value is <= the high value (else ignored with
+   warning), then checks for any overlap between the current value and any of
+   the previous case constants (if so, error).  If all is ok, appends the case
+   constant onto the list of previous values.
+
+   Returns true iff no errors.
+
+   Note: the case expression should be internally converted to a long,
+   regardless of its type.  All comparisons of the case expression with
+   case constants should be as TYSIGNEDLONGINT.  This internal conversion
+   does not affect the TYPE being passed to check_case_values().
+*/
+BOOLEAN check_case_values(TYPETAG type, VAL_LIST vals, VAL_LIST prev_vals);
+
+
+/* gram: case_constant_list (2nd production -- if error occurred), optional_semicolon_or_else_branch (both productions)
+   De-allocates a list of case constants.
+*/
+void case_value_list_free(VAL_LIST vals);
+
+
+/* gram: one_case_constant (once in 1st production; twice in 2nd production)
+   Here, expr is a static (constant) expression, either alone or part of
+   a subrange.  Sets the output parameters to the value and type of the
+   expression.  The expr (after converting a STRCONST if possible or necessary)
+   must be an INTCONST (else error).  Returns true iff no errors.
+*/
+BOOLEAN get_case_value(EXPR expr, long * val, TYPETAG * type);
+
+
+/* gram: for_statement (in intermediate action after LEX_DO)
+   Expressions passed are for the loop control variable, the initial value
+   and the limit value, respectively.  Checks that the var is an l-value of
+   ordinal type, and that its type matches those of the init and limit
+   (after base types are substituted for subranges, as usual).
+   Returns true iff all checks are ok.
+*/
+BOOLEAN check_for_preamble(EXPR var, EXPR init, EXPR limit);
+
 #endif
 

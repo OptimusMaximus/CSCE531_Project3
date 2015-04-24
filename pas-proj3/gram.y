@@ -104,6 +104,8 @@ void yyerror(const char *);
     EXPR_UNOP    y_unop;
     EXPR_BINOP   y_binop;
     EXPR_ID      y_exprid;
+    VAL_LIST	 y_valuelist;
+    CASE_REC	 y_caserec;
 }
 
 /* updated token types and non-terminal types */
@@ -127,6 +129,8 @@ void yyerror(const char *);
 %type <y_cint> variable_declaration simple_decl any_decl any_declaration_part function_declaration
 %type <y_string> simple_if if_statement case_statement conditional_statement
 %type <y_expr> boolean_expression
+%type <y_valuelist> case_constant_list one_case_constant
+%type <y_caserec> case_element_list case_element
 
 %type <y_expr> unsigned_number number constant constant_literal
 %type <y_expr> expression actual_parameter static_expression
@@ -542,13 +546,18 @@ variant:
   ;
 
 case_constant_list:
-    one_case_constant
-  | case_constant_list ',' one_case_constant
+    one_case_constant 
+  | case_constant_list ',' one_case_constant {}
   ;
 
 one_case_constant:
-    static_expression
-  | static_expression LEX_RANGE static_expression
+    static_expression {TYPETAG type; long val;
+				if(get_case_value($1, &val, &type) == TRUE){
+					$$ = new_case_value(type, val, val);
+				}
+				else {$$ = NULL;}
+			}
+  | static_expression LEX_RANGE static_expression {}
   ;
 
 /* variable declaration part */
@@ -685,7 +694,7 @@ if_statement:
   ;
 
 case_statement:
-    LEX_CASE expression LEX_OF case_element_list optional_semicolon_or_else_branch LEX_END {/*TODO: Add for cases */}
+    LEX_CASE expression LEX_OF {} case_element_list optional_semicolon_or_else_branch LEX_END {/*TODO: Add for cases */}
   ;
 
 optional_semicolon_or_else_branch:
@@ -699,7 +708,7 @@ case_element_list:
   ;
 
 case_element:
-    case_constant_list ':' statement
+    case_constant_list ':' statement {}
   ;
 
 case_default:
@@ -873,7 +882,7 @@ index_expression_item:
 /* expressions */
 
 static_expression:
-    expression {}
+    expression { $$ = $1; }
   ;
 
 boolean_expression:
