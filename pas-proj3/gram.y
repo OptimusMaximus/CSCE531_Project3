@@ -747,8 +747,9 @@ case_statement:
 								$<y_caserec>$ = new_case_rec;
 								exit_case_top++;
 								exit_case_labels[exit_case_top] = exit_case;
-								 
-							   } case_element_list optional_semicolon_or_else_branch LEX_END { b_label($<y_caserec>4.label);}
+								
+
+							   } case_element_list optional_semicolon_or_else_branch LEX_END { exit_case_top--; b_label($<y_caserec>4.label);}
   ;
 
 optional_semicolon_or_else_branch:
@@ -762,18 +763,21 @@ case_element_list:
   ;
 
 case_element:
-    case_constant_list ':'   {
-								if($1 != NULL)
+    case_constant_list ':'   {  
+								if($1 != NULL){
 									if(check_case_values($<y_caserec>-1.type, $1, $<y_caserec>-1.values) == TRUE){
 										$<y_caserec>$.type = $1->type;
 										$<y_caserec>$.label = new_symbol();
 										$<y_caserec>$.values = $1;
 										encode_dispatch($1, $<y_caserec>$.label);
 
-								}
+									}
+									else error("check_case_values = FALSE");
+								}								
+								else error("case_constant_list is null");
 		
 							}
-							statement { $$ = $<y_caserec>3; b_jump(exit_case_labels[exit_case_top]); }
+							statement { $$ = $<y_caserec>3; b_jump(exit_case_labels[exit_case_top]);  }
   ;
 
 case_default:

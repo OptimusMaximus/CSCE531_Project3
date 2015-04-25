@@ -23,24 +23,6 @@
 int exit_label = -1;
 char* exit_label_stack[100];
 
-char* current_exit_label() {
-   if (exit_label < 0) {
-      bug("Exit label stack is empty");
-      return;
-   }
-   char* label = exit_label_stack[exit_label];
-   return label;
-}
-
-char* old_exit_label() {
-   if(exit_label < 0) {
-      bug("Exit label stack is empty");
-      return;
-   }
-   char* label = exit_label_stack[exit_label];
-   exit_label--;
-   return label;
-}
 void declare_var(VAR_ID_LIST list_id, TYPE type){
 	/* Return if type tag is TYERROR OR TYFUNC */
 	if (ty_query(type) == TYERROR || ty_query(type) == TYFUNC) return;
@@ -141,11 +123,6 @@ unsigned int get_size(TYPE type){
     		bug("Illegal type tag %d in get_size", tag);
     		return 0;
     }
-}
-void new_exit_label() {
-   char* label = new_symbol();
-   exit_label++; //counter
-   exit_label_stack[exit_label] = label;
 }
 
 int get_align(TYPE type){
@@ -359,7 +336,7 @@ void encode_binop(EXPR_BINOP out, EXPR expr)
 
 //TODO: Still working on constant folding
 //Constant folding done here
-//add SUB, MUL, succ, chr, ord, chr, DIV, MOD, 
+//add SUB, MUL, succ, chr, ord, pred, DIV, MOD, 
 if(expr->u.binop.left->tag==INTCONST && expr->u.binop.right->tag==INTCONST)
 {
 	EXPR ret;
@@ -738,7 +715,7 @@ void encode_dispatch(VAL_LIST vals, char * label)
 {
   /*New match label*/
   char * match_label = new_symbol();
-
+ 
   /*If there are elements in the val list*/
   if(vals != NULL)
     while(vals != NULL)
@@ -754,7 +731,7 @@ void encode_dispatch(VAL_LIST vals, char * label)
 		b_dispatch(B_LE, TYSIGNEDLONGINT, vals->hi, match_label, FALSE);
 		b_label(new_label);
       }
-      /*Moves onto the next item*/
+      /*Moves to the next item*/
       vals = vals->next;
     }
 
@@ -763,7 +740,6 @@ void encode_dispatch(VAL_LIST vals, char * label)
 
   /*Emits the match label*/
   b_label(match_label);
-  //b_pop();
 }
 
 

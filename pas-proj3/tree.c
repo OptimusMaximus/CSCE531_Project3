@@ -989,7 +989,7 @@ EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
             return make_error_expr();
          }
    
-         //returns char so updated type
+         //returns char so update the type
          ret->type = ty_build_basic(TYUNSIGNEDCHAR);
          break;
       case SUCC_OP:
@@ -1542,13 +1542,14 @@ void case_value_list_free(VAL_LIST vals){
    must be an INTCONST (else error).  Returns true iff no errors.
 */
 BOOLEAN get_case_value(EXPR expr, long * val, TYPETAG * type){
+	//if(expr->tag == UNOP) error("unop");
 	if(expr->tag == INTCONST){
 		/* Sets the type and value */
 		*type = ty_query(expr->type);
 		*val = expr->u.intval;
 		return TRUE;
 	}
-	else if(expr->tag = STRCONST){
+	else if(expr->tag == STRCONST){
 		/* Convert if string is of length one
 		   We know this is a character */
 		if(strlen(expr->u.strval) == 1){
@@ -1559,6 +1560,17 @@ BOOLEAN get_case_value(EXPR expr, long * val, TYPETAG * type){
 		}else{
 			error("STRCONST not length 1");
 			return FALSE;
+		}
+	}
+	else if(expr->tag == UNOP){
+		if(expr->u.unop.op == CHR_OP){
+			*type = TYUNSIGNEDCHAR;
+			*val = expr->u.unop.operand->u.intval;
+			expr = make_intconst_expr((int)expr->u.unop.operand->u.intval, ty_build_basic(TYSIGNEDLONGINT));
+			return TRUE;
+		}
+		else if(expr->u.unop.op == ORD_OP){
+			error("in ord op");
 		}
 	}
 	else{
