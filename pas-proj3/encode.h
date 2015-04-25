@@ -27,6 +27,9 @@ void encode_expr(EXPR expr);
 
 /* Used locally by encode expr */
 void encode_unop(EXPR_UNOP op, EXPR expr);
+void new_exit_label();
+char* current_exit_label();
+char* old_exit_label();
 
 /* Used locally by encode expr */
 void encode_binop(EXPR_BINOP out, EXPR expr);

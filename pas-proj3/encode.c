@@ -20,6 +20,27 @@
 #include "backend-x86.h"
 #include "encode.h"
 
+int exit_label = -1;
+char* exit_label_stack[100];
+
+char* current_exit_label() {
+   if (exit_label < 0) {
+      bug("Exit label stack is empty");
+      return;
+   }
+   char* label = exit_label_stack[exit_label];
+   return label;
+}
+
+char* old_exit_label() {
+   if(exit_label < 0) {
+      bug("Exit label stack is empty");
+      return;
+   }
+   char* label = exit_label_stack[exit_label];
+   exit_label--;
+   return label;
+}
 void declare_var(VAR_ID_LIST list_id, TYPE type){
 	/* Return if type tag is TYERROR OR TYFUNC */
 	if (ty_query(type) == TYERROR || ty_query(type) == TYFUNC) return;
@@ -120,6 +141,11 @@ unsigned int get_size(TYPE type){
     		bug("Illegal type tag %d in get_size", tag);
     		return 0;
     }
+}
+void new_exit_label() {
+   char* label = new_symbol();
+   exit_label++; //counter
+   exit_label_stack[exit_label] = label;
 }
 
 int get_align(TYPE type){

@@ -61,6 +61,12 @@ begin
       print_is
    end;
 
+   x := 9;
+
+   while x >= 0 do begin
+      print_x;
+      x := x - 1
+   end;
    print_grooviest;
 
 end.
