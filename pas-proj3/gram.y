@@ -70,6 +70,13 @@
 ST_ID func_id_stack[BS_DEPTH];
 int stack_counter = -1;
 
+/*Exit labels stack*/
+char* exit_labels[100];
+int exit_label_curr = -1;
+
+char* exit_case_labels[100];
+int exit_case_top = -1;
+
 /* Cause the `yydebug' variable to be defined.  */
 #define YYDEBUG 1
 
@@ -546,18 +553,44 @@ variant:
   ;
 
 case_constant_list:
-    one_case_constant 
-  | case_constant_list ',' one_case_constant {}
+    one_case_constant { 
+						if($1 != NULL){
+							if(check_case_const($1, $1->type) == TRUE){							
+								$$ = $1;							
+							}						
+						}
+						else
+							$$ = NULL;
+					 }
+  | case_constant_list ',' one_case_constant {
+												if($3 != NULL){
+													check_case_values($1->type, $3, $1);
+													$$ = $1;
+												}
+											}
   ;
 
 one_case_constant:
-    static_expression {TYPETAG type; long val;
-				if(get_case_value($1, &val, &type) == TRUE){
-					$$ = new_case_value(type, val, val);
-				}
-				else {$$ = NULL;}
-			}
-  | static_expression LEX_RANGE static_expression {}
+    static_expression { TYPETAG type; long val;
+						if(get_case_value($1, &val, &type) == TRUE){
+							$$ = new_case_value(type, val, val);
+						}
+						else 
+							$$ = NULL;
+					  }
+  | static_expression LEX_RANGE static_expression {
+							TYPETAG type1, type2; long lo, hi;
+							if(get_case_value($1, &lo, &type1) == TRUE && get_case_value($1, &hi, &type2) == TRUE){
+								if(type1 == type2)
+									new_case_value(type1, lo, hi);
+								else{
+									error("Type is not equivalent");
+									$$ = NULL;	
+								}
+							}
+
+
+						}
   ;
 
 /* variable declaration part */
@@ -632,8 +665,8 @@ compound_statement:
   ;
 
 statement_sequence:
-    statement
-  | statement_sequence semi statement
+    statement {}
+  | statement_sequence semi statement {}
   ;
 
 statement:
@@ -668,7 +701,7 @@ conditional_statement:
 
 simple_if:
     LEX_IF boolean_expression LEX_THEN 
-                          {error("ty_query = %d",ty_query($2->type)); 
+                          {//error("ty_query = %d",ty_query($2->type)); 
                             /* If boolean_expression is a boolean */
                             if(ty_query($2->type) == TYSIGNEDCHAR){
                                 char *end_if = new_symbol();
@@ -677,16 +710,16 @@ simple_if:
                                 b_cond_jump(TYSIGNEDCHAR, B_ZERO, end_if);
                                 $<y_string>$ = end_if;
                             }else {
-				error("Non-Boolean expression");
-			    }
+								error("Non-Boolean expression");
+			    			}
                           } 
-       			 statement { $$ = $<y_string>4; }
+       			 			statement { $$ = $<y_string>4; }
   ;
 
 if_statement:
     simple_if LEX_ELSE {  char* end_else = new_symbol();
                           b_jump(end_else);
-			  b_label($1);
+			  			  b_label($1);
                           $<y_string>$ = end_else;
                         }
                         statement { b_label($<y_string>3); }
@@ -694,26 +727,59 @@ if_statement:
   ;
 
 case_statement:
-    LEX_CASE expression LEX_OF {} case_element_list optional_semicolon_or_else_branch LEX_END {/*TODO: Add for cases */}
+    LEX_CASE expression LEX_OF { 
+								char *exit_case = new_symbol();
+								if(is_lval($2) == TRUE && ty_query($2->type) != TYUNSIGNEDCHAR){
+									
+									$2 = make_un_expr(DEREF_OP, $2);
+								}
+								if(ty_query($2->type) != TYSIGNEDLONGINT){
+									EXPR convertedNode = make_un_expr(CONVERT_OP, $2);
+	 								convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
+									$2 = convertedNode;
+								}
+								encode_expr($2);
+								/*Create empty case record node*/
+								CASE_REC new_case_rec;								 
+								new_case_rec.type = ty_query($2->type);
+								new_case_rec.label = exit_case;
+								VAL_LIST new_val_list = NULL;
+								new_case_rec.values = new_val_list;
+								$<y_caserec>$ = new_case_rec;
+								exit_case_top++;
+								exit_case_labels[exit_case_top] = exit_case;
+								 
+							   } case_element_list optional_semicolon_or_else_branch LEX_END { b_label($<y_caserec>4.label);}
   ;
 
 optional_semicolon_or_else_branch:
-    optional_semicolon
-  | case_default statement_sequence
+    optional_semicolon 	{ b_pop(); }
+  | case_default { b_pop(); } statement_sequence {}
   ;
 
 case_element_list:
-    case_element
-  | case_element_list semi case_element
+    case_element	{ $$ = $1; b_label($1.label); }
+  | case_element_list semi case_element { $$ = $1; b_label($3.label); }
   ;
 
 case_element:
-    case_constant_list ':' statement {}
+    case_constant_list ':'   {
+								if($1 != NULL)
+									if(check_case_values($<y_caserec>-1.type, $1, $<y_caserec>-1.values) == TRUE){
+										$<y_caserec>$.type = $1->type;
+										$<y_caserec>$.label = new_symbol();
+										$<y_caserec>$.values = $1;
+										encode_dispatch($1, $<y_caserec>$.label);
+
+								}
+		
+							}
+							statement { $$ = $<y_caserec>3; b_jump(exit_case_labels[exit_case_top]); }
   ;
 
 case_default:
-    LEX_ELSE
-  | semi LEX_ELSE
+    LEX_ELSE {}
+  | semi LEX_ELSE {}
   ;
 
 repetitive_statement:
@@ -844,9 +910,9 @@ rts_proc_parlist:
   ;
 
 statement_extensions:
-    return_statement
-  | continue_statement
-  | break_statement
+    return_statement {}
+  | continue_statement {}
+  | break_statement { if(is_exit_label() == FALSE) { error("Break statement not inside loop"); } else { b_jump(current_exit_label());} }
   ;
 
 return_statement:

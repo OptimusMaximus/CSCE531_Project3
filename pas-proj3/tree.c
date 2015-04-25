@@ -1410,9 +1410,9 @@ VAL_LIST new_case_value(TYPETAG type, long lo, long hi){
    does not affect the TYPE being passed to check_case_values().
 */
 BOOLEAN check_case_values(TYPETAG type, VAL_LIST vals, VAL_LIST prev_vals){
-	while(vals != NULL){
+	/*while(vals != NULL){*/
 		/* Check the type */
-		if(vals->type != type){
+		/*if(vals->type != type){
 			error("Case constant type does not match type of case expression");
 			return FALSE;
 		}
@@ -1423,7 +1423,109 @@ BOOLEAN check_case_values(TYPETAG type, VAL_LIST vals, VAL_LIST prev_vals){
 		}
 		vals = vals->next;
 	}	
-	return TRUE;
+	return TRUE;*/
+	/*Copies the val list*/
+   VAL_LIST valsC = vals;
+   VAL_LIST pValsC = prev_vals;
+
+  /*If first check, return true*/
+  if(prev_vals == NULL)
+  {
+    /*Previous values equal to values, return*/
+    prev_vals = vals;
+    return TRUE;
+  }
+
+  /*While loop to run through the vals list*/
+  while(valsC != NULL)
+  {
+     /*Checks for type match between case constants and expressions*/
+     if(type != vals->type)
+     {
+	/*Error, return false*/
+	error("Case constant type does not match case expression type");
+	return FALSE;
+     }
+
+    /*If it is subrange, check range*/
+    if(vals->lo != vals->hi)
+      if(vals->lo >= vals->hi)
+	warning("Empty range in case constant (ignored)");
+
+    /*While loop that runs through the previous list*/
+    while(pValsC != NULL)
+    {
+      /*Checks for overlap differently if subrange or not*/
+      if(pValsC->lo != pValsC->hi)
+      {
+	/*If comparing element is subrange*/
+	if(valsC->lo != valsC->hi)
+	{
+	   /*If subranges overlap*/
+	   if((valsC->lo >= pValsC->lo && valsC->lo <= pValsC->hi) || (valsC->hi >= pValsC->lo && valsC->hi <= pValsC->hi))
+	   {
+	      /*Error, return false*/
+	      error("Overlapping constants in case statement");
+	      return FALSE;
+	   }
+	}
+	else
+	{
+	   /*If inside subrange, overlap*/
+	   if(valsC->lo >= pValsC->lo && valsC->lo <= pValsC->hi)
+	   {
+	      /*Error, return false*/
+	      error("Overlapping constants in case statement");
+	      return FALSE;
+	   }
+	}
+      }
+      /*Else, not subrange*/
+      else
+      {
+	/*If comparing element is subrange*/
+	if(valsC->lo != valsC->hi)
+	{
+	  /*Checks to see if inside subrange*/
+	  if(pValsC->lo >= valsC->lo && pValsC->lo <= valsC->hi)
+	  {
+	     /*Error, return false*/
+	     error("Overlapping constants in case statement");
+	     return FALSE;
+	  }
+	}
+	else
+	{
+	  /*Checks to see if same*/
+	  if(valsC->lo == pValsC->lo)
+	  {	
+	     /*Error, return false*/
+	     error("Overlapping constants in case statement4");
+	     return FALSE;
+	  }
+	}
+      }
+      /*If last item all checks passed add to end of list*/
+      if(pValsC->next == NULL)
+      {
+	/*Adds to list*/
+	pValsC->next = new_case_value(valsC->type, valsC->lo, valsC->hi);
+	pValsC = NULL;
+      }
+      else
+      {
+	/*Moves onto the next item*/
+	pValsC = pValsC->next;
+      }
+    }
+    /*Moves onto the next item*/
+    valsC = valsC->next;
+    pValsC = prev_vals;
+  }
+
+  /*All checks passed return true*/
+  return TRUE;
+
 }
 /* gram: case_constant_list (2nd production -- if error occurred), optional_semicolon_or_else_branch (both productions)
    De-allocates a list of case constants.
@@ -1441,6 +1543,7 @@ void case_value_list_free(VAL_LIST vals){
 */
 BOOLEAN get_case_value(EXPR expr, long * val, TYPETAG * type){
 	if(expr->tag == INTCONST){
+		/* Sets the type and value */
 		*type = ty_query(expr->type);
 		*val = expr->u.intval;
 		return TRUE;
@@ -1474,4 +1577,31 @@ BOOLEAN get_case_value(EXPR expr, long * val, TYPETAG * type){
 */
 BOOLEAN check_for_preamble(EXPR var, EXPR init, EXPR limit){
 	return TRUE;
+}
+
+/*Function that checks a single case constant*/
+BOOLEAN check_case_const(VAL_LIST list, TYPETAG tag)
+{
+  /*If the list is not equal to null*/
+  if(list != NULL)
+  {
+    /*Copies the list*/
+    VAL_LIST copy = list;
+
+    /*While loop*/
+    while(copy != NULL)
+    {
+      if(list->type != tag)
+      {
+	/*Error, return false*/
+	error("Case constant type does not match case expression type");
+	return FALSE;
+      }
+      /*Moves onto the next element*/
+      copy = copy->next;
+    }
+  }
+  
+  /*Passed, return true*/
+  return TRUE;
 }

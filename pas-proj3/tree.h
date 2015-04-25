@@ -10,6 +10,9 @@ extern ST_ID func_id_stack[BS_DEPTH];
 /* For recording where we are at in the stack */
 extern int stack_counter;
 
+extern char* exit_case_labels[100];
+extern int exit_case_top;
+
 /* Procedure and function prototype directives */
 typedef enum { DIR_EXTERNAL, DIR_FORWARD } DIRECTIVE;
 
