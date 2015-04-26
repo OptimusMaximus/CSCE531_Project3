@@ -152,4 +152,5 @@ void encode_dispatch(VAL_LIST vals, char * label);
    depending on the direction.
 */
 char * encode_for_preamble(EXPR var, EXPR init, int dir, EXPR limit);
+void encode_arrayaccess(EXPR expr, EXPR_LIST indices);
 #endif

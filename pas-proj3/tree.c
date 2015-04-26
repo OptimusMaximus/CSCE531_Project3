@@ -815,7 +815,7 @@ EXPR make_error_expr() {
    Return: TRUE if l-value                               
 */
 BOOLEAN is_lval(EXPR expr) {
-   if (expr->tag == LVAR)
+   if (expr->tag == LVAR || expr->tag == ARRAY_ACCESS)
       return TRUE;
    else if (expr->tag == GID) {
       if (ty_query(expr->type) == TYFUNC || ty_query(expr->type) == TYERROR) {
@@ -1225,12 +1225,12 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
 	break;
       case ASSIGN_OP:
 		  //error("in assign op, LEFT%d, RIGHT%d", left_type, right_type);
-		  if(left_type != right_type){
-		  	/*if(left_type == TYSIGNEDCHAR && right_type != TYSIGNEDCHAR){
+		  /*if(left_type != right_type){
+		  	if(left_type == TYSIGNEDCHAR && right_type != TYSIGNEDCHAR){
 				error("Illegal conversion1");
 				return make_error_expr();
 			}*/
-			if(left_type == TYUNSIGNEDCHAR && right_type != TYUNSIGNEDCHAR){
+			/*if(left_type == TYUNSIGNEDCHAR && right_type != TYUNSIGNEDCHAR){
 				error("Illegal conversion");
 				return make_error_expr();
 			}
@@ -1238,7 +1238,7 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
 				error("Illegal conversion");
 				return make_error_expr();
 			}
-		  }
+		  }*/
           break;
       default:
          break;
@@ -1373,10 +1373,68 @@ unsigned long get_value_range(TYPE type, long * low){
    languages).
 */
 EXPR make_array_access_expr(EXPR array, EXPR_LIST indices){
-	if(ty_query(array->type) != TYARRAY){
-		error("Nonarray in array access expression");
-		return make_error_expr();
-	}
+   //checks to make sure array type
+   if (ty_query(array->type) != TYARRAY) {
+      error("Nonarray in array access expression");
+      return make_error_expr();
+   }
+
+   //variables for querying
+   TYPE array_type;
+   INDEX_LIST i;
+   EXPR_LIST test = indices;
+
+   array_type = ty_query_array(array->type, &i);
+
+   while (indices != NULL && i != NULL) {		
+		
+      //gets the r value, deref if l-val
+      if (is_lval(indices->expr) == TRUE) {
+         indices->expr = make_un_expr(DEREF_OP, indices->expr);
+      }
+		//error("indice = %d", indices->expr->u.intval);
+      /*
+      //unary converts
+      if (ty_query(indices->expr->type) == TYSIGNEDCHAR || ty_query(indices->expr->type) == TYUNSIGNEDCHAR) {
+         EXPR convertedNode = make_un_expr(CONVERT_OP, indices->expr);
+         convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
+         indices->expr = convertedNode;
+         //array_type = indices->expr->type;
+      }
+      else if (ty_query(indices->expr->type) == TYFLOAT) {
+         EXPR convertedNode = make_un_expr(CONVERT_OP, indices->expr);
+         convertedNode->type = ty_build_basic(TYDOUBLE);
+         indices->expr = convertedNode;
+         //array_type = indices->expr->type;
+      }*/
+      
+      //checks type with "formal" type
+      if (ty_query(indices->expr->type) != TYSIGNEDLONGINT) {
+         error("Incompatible index type in array access");
+         return make_error_expr();
+      }
+
+      i = i->next;
+      indices = indices->next;
+   }
+  
+   //checks that both indices are same length
+   if ((indices == NULL && i != NULL) || (indices != NULL && i == NULL)) {
+      error("indices not equal");
+      return make_error_expr();
+   }
+
+   //finally creates array_access node
+   EXPR ret;
+   ret = (EXPR)malloc(sizeof(EXPR_NODE));
+   assert(ret != NULL);
+   ret->tag = ARRAY_ACCESS;
+   ret->type = array_type;
+   ret->u.fcall.args = test;
+   ret->u.fcall.function = array;
+
+   return ret;
+   
 }
 /* gram: one_case_constant (both productions), case_statement (intermediate action after LEX_OF, just to make an inital dummy record)
    Returns a new VAL_LIST node with the given information for a single case

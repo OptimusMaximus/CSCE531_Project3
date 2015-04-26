@@ -1,0 +1,312 @@
+Comments for self-test -------- Sun Apr 26, 2015 at 16:20:29 EDT
+No illegal files found
+
+Testing compiliation with ppc3:
+  Attempting to build ppc3 ... ok
+
+
+LEVEL 80extra:
+
+Running ppc3 with input T3L80extra_ok.pas ... zero termination status
+  T3L80extra_ok.s exists ... will assemble and run later
+Running ppc3 with input T3L80extra_err.pas ... zero termination status
+  T3L80extra_err.err exists
+  Comparing with solution file ... files match
+
+
+LEVEL 80:
+
+Running ppc3 with input T3L80_ok.pas ... zero termination status
+  T3L80_ok.s exists ... will assemble and run later
+Running ppc3 with input T3L80_err.pas ... nonzero termination status
+  T3L80_err.err exists
+  Comparing with solution file ... files differ:
+vvvvv
+8c8,11
+< BUG: line 132: unsupported type in b_deref
+---
+> line 132: ERROR -- Illegal conversion
+> line 133: ERROR -- Illegal conversion
+> line 134: ERROR -- Nonarray in array access expression
+> line 135: ERROR -- Incompatible index type in array access
+^^^^^
+
+
+LEVEL 90:
+
+Running ppc3 with input T3L90_ok.pas ... zero termination status
+  T3L90_ok.s exists ... will assemble and run later
+Running ppc3 with input T3L90_err.pas ... zero termination status
+  T3L90_err.err exists
+  Comparing with solution file ... files differ:
+vvvvv
+6c6
+< line 128: ERROR -- Case constant type does not match case expression type
+---
+> line 127: ERROR -- Case constant type does not match case expression type
+7a8
+> line 133: ERROR -- Case constant type does not match case expression type
+^^^^^
+
+
+LEVEL 90extra:
+
+Running ppc3 with input T3L90extra_ok.pas ... zero termination status
+  T3L90extra_ok.s exists ... will assemble and run later
+Running ppc3 with input T3L90extra_err.pas ... zero termination status
+  T3L90extra_err.err exists
+  Comparing with solution file ... files differ:
+vvvvv
+6c6
+< line 128: ERROR -- Case constant type does not match case expression type
+---
+> line 127: ERROR -- Case constant type does not match case expression type
+7a8
+> line 133: ERROR -- Case constant type does not match case expression type
+^^^^^
+
+
+LEVEL 100extra:
+
+Running ppc3 with input T3L100extra_ok.pas ... nonzero termination status
+  errors reported:
+vvvvv
+line 32: ERROR -- Break statement not inside loop
+line 52: ERROR -- Break statement not inside loop
+line 54: ERROR -- Break statement not inside loop
+line 69: ERROR -- Break statement not inside loop
+line 70: ERROR -- syntax error
+^^^^^
+  T3L100extra_ok.s exists ... will assemble and run later
+
+
+LEVEL 100:
+
+Running ppc3 with input T3L100_ok.pas ... zero termination status
+  T3L100_ok.s exists ... will assemble and run later
+Running ppc3 with input T3L100_err.pas ... zero termination status
+  T3L100_err.err exists
+  Comparing with solution file ... files differ:
+vvvvv
+1,2c1,5
+< line 33: ERROR -- indices not equal
+< line 34: ERROR -- indices not equal
+---
+> line 26: ERROR -- For-loop control variable not of ordinal type
+> line 28: ERROR -- Type mismatch in for-loop control
+> line 30: ERROR -- Type mismatch in for-loop control
+> line 33: ERROR -- Wrong number of indices in array access
+> line 34: ERROR -- Wrong number of indices in array access
+^^^^^
+
+
+LEVEL 110:
+
+Running ppc3 with input T3L110_ok.pas ... nonzero termination status
+  errors reported:
+vvvvv
+line 22: ERROR -- Undeclared identifier "A" in expression
+line 23: ERROR -- Undeclared identifier "A" in expression
+line 25: ERROR -- Illegal conversion
+line 70: ERROR -- Undeclared identifier "C1" in expression
+line 71: ERROR -- Undeclared identifier "C1" in expression
+line 71: ERROR -- Incorrect type in ORD_OP
+BUG: line 71: unpromoted function argument in b_load_arg
+^^^^^
+  T3L110_ok.s exists ... will assemble and run later
+Running ppc3 with input T3L110_err.pas ... nonzero termination status
+  T3L110_err.err exists
+  Comparing with solution file ... files differ:
+vvvvv
+1,3d0
+< line 22: ERROR -- Undeclared identifier "A" in expression
+< line 23: ERROR -- Undeclared identifier "A" in expression
+< line 25: ERROR -- Illegal conversion
+5a3
+> line 54: ERROR -- Duplicate variable declaration: "C1"
+8c6,12
+< BUG: line 73: unpromoted function argument in b_load_arg
+---
+> line 72: ERROR -- Wrong number of arguments to procedure or function call
+> line 72: ERROR -- Incompatible argument type
+> line 87: ERROR -- Illegal conversion
+> line 87: ERROR -- Incompatible argument type
+> line 88: ERROR -- Wrong number of arguments to procedure or function call
+> line 89: ERROR -- Reference parameter argument is not an l-value
+> line 90: ERROR -- Reference parameter argument is not an l-value
+^^^^^
+######################################################
+Compilation summary for self-test:
+  T3L100_err:  problem(s) found
+  T3L100_ok:  ok
+  T3L100extra_ok:  problem(s) found
+  T3L110_err:  problem(s) found
+  T3L110_ok:  problem(s) found
+  T3L80_err:  problem(s) found
+  T3L80_ok:  ok
+  T3L80extra_err:  error message(s) (check appropriateness)
+  T3L80extra_ok:  ok
+  T3L90_err:  problem(s) found
+  T3L90_ok:  ok
+  T3L90extra_err:  problem(s) found
+  T3L90extra_ok:  ok
+  ppc3:  ok
+######################################################
+
+Testing execution with ppc3:
+
+
+LEVEL 80extra:
+
+Trying to assemble T3L80extra_ok.s with gcc and lib80extra ...  succeeded
+Executable a.out exists
+./a.out > T3L80extra_ok.out 2> T3L80extra_ok_exec.err terminated abnormally
+  Standard error output:
+vvvvv
+
+^^^^^
+  T3L80extra_ok.out exists -- comparing with solution output file
+ files match
+
+
+LEVEL 80:
+
+Trying to assemble T3L80_ok.s with gcc and lib80 ...  succeeded
+Executable a.out exists
+./a.out > T3L80_ok.out 2> T3L80_ok_exec.err terminated abnormally
+  Standard error output:
+vvvvv
+
+^^^^^
+  T3L80_ok.out exists -- comparing with solution output file
+ files match
+
+
+LEVEL 90:
+
+Trying to assemble T3L90_ok.s with gcc and lib90 ...  succeeded
+Executable a.out exists
+./a.out > T3L90_ok.out 2> T3L90_ok_exec.err terminated abnormally
+  Standard error output:
+vvvvv
+
+^^^^^
+  T3L90_ok.out exists -- comparing with solution output file
+ files match
+
+
+LEVEL 90extra:
+
+Trying to assemble T3L90extra_ok.s with gcc and lib90 ...  succeeded
+Executable a.out exists
+./a.out > T3L90extra_ok.out 2> T3L90extra_ok_exec.err terminated abnormally
+  Standard error output:
+vvvvv
+
+^^^^^
+  T3L90extra_ok.out exists -- comparing with solution output file
+ files match
+
+
+LEVEL 100extra:
+
+Trying to assemble T3L100extra_ok.s with gcc and lib100 ...  failed
+Executable a.out does not exist
+
+
+LEVEL 100:
+
+Trying to assemble T3L100_ok.s with gcc and lib100 ...  succeeded
+Executable a.out exists
+./a.out > T3L100_ok.out 2> T3L100_ok_exec.err terminated abnormally
+  Standard error output:
+vvvvv
+Segmentation fault (core dumped)
+^^^^^
+  T3L100_ok.out exists -- comparing with solution output file
+ files differ:
+vvvvv
+0a1,61
+> ..........
+> ...............
+> ..........
+> EOjjEjjjOjjjjEjjjjjOjjjjjjEjjjjjjjOjjjjjjjj
+> i = 10; j = 9
+> i = 10; j = 10
+> i = 10; j = 9
+> i = 10; j = 8
+> i = 10; j = 7
+> i = 10; j = 6
+> i = 10; j = 5
+> i = 10; j = 4
+> i = 10; j = 3
+> i = 10; j = 2
+> i = 10; j = 1
+> oops
+> iaa =
+> [
+>   [    1    1    1    1    1    1    1    1    1    1    1    1 ]
+>   [    1    2    3    4    5    6    7    8    9   10   11   12 ]
+>   [    1    3    6   10   15   21   28   36   45   55   66   78 ]
+>   [    1    4   10   20   35   56   84  120  165  220  286  364 ]
+>   [    1    5   15   35   70  126  210  330  495  715 1001 1365 ]
+>   [    1    6   21   56  126  252  462  792 1287 2002 3003 4368 ]
+>   [    1    7   28   84  210  462  924 1716 3003 5005 8008 2376 ]
+>   [    1    8   36  120  330  792 1716 3432 6435 1440 9448 1824 ]
+>   [    1    9   45  165  495 1287 3003 6435 2870 4310 3758 5582 ]
+>   [    1   10   55  220  715 2002 5005 1440 4310 8620 2378 7960 ]
+>   [    1   11   66  286 1001 3003 8008 9448 3758 2378 4756 2716 ]
+>   [    1   12   78  364 1365 4368 2376 1824 5582 7960 2716 5432 ]
+>   [    1   13   91  455 1820 6188 8564  388 5970 3930 6646 2078 ]
+>   [    1   14  105  560 2380 8568 7132 7520 3490 7420 4066 6144 ]
+> ]
+> raaa =
+> [
+>   [
+>     [ 9.000000 8.100000 7.290000 6.561000 ]
+>     [ 5.904900 5.314410 4.782969 4.304672 ]
+>     [ 3.874205 3.486784 3.138106 2.824295 ]
+>     [ 2.541866 2.287679 2.058911 1.853020 ]
+>     [ 1.667718 1.500946 1.350852 1.215767 ]
+>     [ 1.094190 0.984771 0.886294 0.797664 ]
+>   ]
+>   [
+>     [ 0.717898 0.646108 0.581497 0.523348 ]
+>     [ 0.471013 0.423912 0.381520 0.343368 ]
+>     [ 0.309032 0.278128 0.250316 0.225284 ]
+>     [ 0.202756 0.182480 0.164232 0.147809 ]
+>     [ 0.133028 0.119725 0.107753 0.096977 ]
+>     [ 0.087280 0.078552 0.070697 0.063627 ]
+>   ]
+>   [
+>     [ 0.057264 0.051538 0.046384 0.041746 ]
+>     [ 0.037571 0.033814 0.030433 0.027389 ]
+>     [ 0.024650 0.022185 0.019967 0.017970 ]
+>     [ 0.016173 0.014556 0.013100 0.011790 ]
+>     [ 0.010611 0.009550 0.008595 0.007736 ]
+>     [ 0.006962 0.006266 0.005639 0.005075 ]
+>   ]
+> ]
+> r = 0.107753
+^^^^^
+
+
+LEVEL 110:
+
+Trying to assemble T3L110_ok.s with gcc and lib110 ...  failed
+Executable a.out does not exist
+######################################################
+Assembly/execution summary for self-test:
+  T3L100:  problem(s) found
+  T3L100extra:  problem(s) found
+  T3L110:  problem(s) found
+  T3L80:  ok
+  T3L80extra:  ok
+  T3L90:  ok
+  T3L90extra:  ok
+  ppc3:  ok
+######################################################
+ 80% level: 
+ 90% level: 
+100% level: 
+110% level: 

@@ -19,7 +19,7 @@ typedef enum { DIR_EXTERNAL, DIR_FORWARD } DIRECTIVE;
 /* Possible expression types (tags) */
 typedef enum {
     INTCONST, REALCONST, STRCONST, GID, LVAR, LFUN, NULLOP, UNOP, BINOP,
-    FCALL, ERROR
+    FCALL, ERROR, ARRAY_ACCESS
 } EXPR_TAG;
 
 /* Possible nullary operators (tags) */

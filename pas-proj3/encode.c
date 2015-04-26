@@ -237,7 +237,41 @@ void encode_expr(EXPR expr)
         case FCALL:  //expr->tag = 9      
             encode_fcall(expr->u.fcall.function, expr->u.fcall.args);
             break;
+		case ARRAY_ACCESS:
+			encode_arrayaccess(expr->u.fcall.function, expr->u.fcall.args);
+			break;
     }
+}
+
+void encode_arrayaccess(EXPR expr, EXPR_LIST indices) {
+   long low_index, high_index, range;
+   int align;
+   unsigned int size;
+   TYPE array_type, subrange_type;
+   INDEX_LIST index_list;
+   EXPR_LIST rev_indices;
+
+   encode_expr(expr);
+   array_type = ty_query_array(expr->type, &index_list);
+   align = get_align(array_type);
+   size = get_size(array_type);
+
+   rev_indices = expr_list_reverse(indices);
+
+   while (rev_indices != NULL && index_list != NULL) {
+      encode_expr(rev_indices->expr);
+      subrange_type = ty_query_subrange(index_list->type, &low_index, &high_index);
+      range = high_index - low_index + 1;
+      
+      if (index_list->next == NULL) {
+         b_push_const_int(low_index);
+         b_arith_rel_op(B_SUB,TYSIGNEDLONGINT);
+         b_ptr_arith_op(B_ADD, TYSIGNEDLONGINT, size);
+      }
+      //else if (subrange do later)
+      rev_indices = rev_indices->next;
+      index_list = index_list->next;
+   }
 }
 
 /* Function to encode a unary operation */
@@ -367,7 +401,7 @@ if(expr->u.binop.left->tag==INTCONST && expr->u.binop.right->tag==INTCONST)
 			break;
 
 	}
-}
+}/*
 else if (expr->u.binop.left->tag==UNOP && expr->u.binop.right->tag==REALCONST){
 	EXPR ret;
 	switch(out){
@@ -421,7 +455,7 @@ else if(expr->u.binop.left->tag==REALCONST && expr->u.binop.right->tag==UNOP){
 			encode_expr(ret);
 			break;
 	}
-}
+}*/
 // else if(expr->u.binop.left->tag == UNOP && expr->u.binop.right->tag == INTCONST){
 //     EXPR ret;
 //     switch(out){
