@@ -55,8 +55,8 @@ begin
 
 
    case b of
-     5..10: print_oops;
-     1..3:
+     6..10: print_oops;
+     2..3:
         begin   
 	   print_one;
 	   print_two;

@@ -1373,8 +1373,10 @@ unsigned long get_value_range(TYPE type, long * low){
    languages).
 */
 EXPR make_array_access_expr(EXPR array, EXPR_LIST indices){
-	EXPR temp = array;
-	return temp;
+	if(ty_query(array->type) != TYARRAY){
+		error("Nonarray in array access expression");
+		return make_error_expr();
+	}
 }
 /* gram: one_case_constant (both productions), case_statement (intermediate action after LEX_OF, just to make an inital dummy record)
    Returns a new VAL_LIST node with the given information for a single case
@@ -1425,8 +1427,8 @@ BOOLEAN check_case_values(TYPETAG type, VAL_LIST vals, VAL_LIST prev_vals){
 	}	
 	return TRUE;*/
 	/*Copies the val list*/
-   VAL_LIST valsC = vals;
-   VAL_LIST pValsC = prev_vals;
+   VAL_LIST vals_copy = vals;
+   VAL_LIST pvals_copy = prev_vals;
 
   /*If first check, return true*/
   if(prev_vals == NULL)
@@ -1437,43 +1439,40 @@ BOOLEAN check_case_values(TYPETAG type, VAL_LIST vals, VAL_LIST prev_vals){
   }
 
   /*While loop to run through the vals list*/
-  while(valsC != NULL)
-  {
+  while(vals_copy != NULL) {
      /*Checks for type match between case constants and expressions*/
-     if(type != vals->type)
-     {
-	/*Error, return false*/
-	error("Case constant type does not match case expression type");
-	return FALSE;
+     if(type != vals->type) {
+		/*Error, return false*/
+		error("Case constant type does not match case expression type");
+//error("type = %d vals->type = %d", type, vals->type);
+		return FALSE;
      }
 
     /*If it is subrange, check range*/
     if(vals->lo != vals->hi)
       if(vals->lo >= vals->hi)
-	warning("Empty range in case constant (ignored)");
+		warning("Empty range in case constant (ignored)");
 
     /*While loop that runs through the previous list*/
-    while(pValsC != NULL)
-    {
+    while(pvals_copy != NULL) {
+		
       /*Checks for overlap differently if subrange or not*/
-      if(pValsC->lo != pValsC->hi)
-      {
-	/*If comparing element is subrange*/
-	if(valsC->lo != valsC->hi)
-	{
-	   /*If subranges overlap*/
-	   if((valsC->lo >= pValsC->lo && valsC->lo <= pValsC->hi) || (valsC->hi >= pValsC->lo && valsC->hi <= pValsC->hi))
-	   {
-	      /*Error, return false*/
-	      error("Overlapping constants in case statement");
-	      return FALSE;
-	   }
-	}
-	else
-	{
+      if(pvals_copy->lo != pvals_copy->hi) {
+		/*If comparing element is subrange*/
+		if(vals_copy->lo != vals_copy->hi) {
+	   		/*If subranges overlap*///5>=2&&5<=2
+	   		if((vals_copy->lo >= pvals_copy->lo && vals_copy->lo <= pvals_copy->hi) || (vals_copy->hi >= pvals_copy->lo && vals_copy->hi <= pvals_copy->hi))
+			//if ((vals_copy->lo >= pvals_copy->lo && vals_copy->lo <= pvals_copy->hi) || (vals_copy->hi >= pvals_copy->lo && vals_copy->hi <= pvals_copy->hi)	)			 
+			{
+	      		/*Error, return false*/
+	      		error("Overlapping constants in case statement");
+				
+	      		return FALSE;
+	   		}
+		}
+		else {
 	   /*If inside subrange, overlap*/
-	   if(valsC->lo >= pValsC->lo && valsC->lo <= pValsC->hi)
-	   {
+	   if(vals_copy->lo >= pvals_copy->lo && vals_copy->lo <= pvals_copy->hi) {
 	      /*Error, return false*/
 	      error("Overlapping constants in case statement");
 	      return FALSE;
@@ -1481,46 +1480,51 @@ BOOLEAN check_case_values(TYPETAG type, VAL_LIST vals, VAL_LIST prev_vals){
 	}
       }
       /*Else, not subrange*/
-      else
-      {
-	/*If comparing element is subrange*/
-	if(valsC->lo != valsC->hi)
-	{
-	  /*Checks to see if inside subrange*/
-	  if(pValsC->lo >= valsC->lo && pValsC->lo <= valsC->hi)
-	  {
-	     /*Error, return false*/
-	     error("Overlapping constants in case statement");
-	     return FALSE;
-	  }
-	}
-	else
-	{
-	  /*Checks to see if same*/
-	  if(valsC->lo == pValsC->lo)
-	  {	
-	     /*Error, return false*/
-	     error("Overlapping constants in case statement4");
-	     return FALSE;
-	  }
-	}
+      else {
+	      		//error("Overlapping constants in case statement!!");
+	      		//error("pvals_copy->lo - %d, pvals_copy->hi - %d, vals_copy->lo - %d, vals_copy->hi - %d",pvals_copy->lo, pvals_copy->hi, vals_copy->lo, vals_copy->hi );
+/*
+			if  (pvals_copy->lo >= vals_copy->lo && pvals_copy->lo <= vals_copy->hi)
+			{
+	      		
+	      		error("Overlapping constants in case statement");
+				
+	      		return FALSE;
+	   		}
+*/		
+		/*If comparing element is subrange*/
+		if(vals_copy->lo != vals_copy->hi) {
+	  		/*Checks to see if inside subrange*/
+	  		if(pvals_copy->lo >= vals_copy->lo && pvals_copy->lo <= vals_copy->hi) {
+	     		/*Error, return false*/
+	     		error("Overlapping constants in case statement");
+	     		return FALSE;
+	  		}
+		} else {
+	  		/*Checks to see if same*/
+	  		if(vals_copy->lo == pvals_copy->lo) {	
+	     		/*Error, return false*/
+	     		error("Overlapping constants in case statement");
+	     		return FALSE;
+	  		}
+		}
       }
       /*If last item all checks passed add to end of list*/
-      if(pValsC->next == NULL)
+      if(pvals_copy->next == NULL)
       {
 	/*Adds to list*/
-	pValsC->next = new_case_value(valsC->type, valsC->lo, valsC->hi);
-	pValsC = NULL;
+	pvals_copy->next = new_case_value(vals_copy->type, vals_copy->lo, vals_copy->hi);
+	pvals_copy = NULL;
       }
       else
       {
 	/*Moves onto the next item*/
-	pValsC = pValsC->next;
+	pvals_copy = pvals_copy->next;
       }
     }
     /*Moves onto the next item*/
-    valsC = valsC->next;
-    pValsC = prev_vals;
+    vals_copy = vals_copy->next;
+    pvals_copy = prev_vals;
   }
 
   /*All checks passed return true*/
@@ -1574,7 +1578,7 @@ BOOLEAN get_case_value(EXPR expr, long * val, TYPETAG * type){
 		}
 	}
 	else{
-		error("Case constant not INTCONST type");
+		error("Case constant has non-ordinal type");
 		return FALSE;
 	}
 }
@@ -1594,20 +1598,21 @@ BOOLEAN check_for_preamble(EXPR var, EXPR init, EXPR limit){
 /*Function that checks a single case constant*/
 BOOLEAN check_case_const(VAL_LIST list, TYPETAG tag)
 {
+	
   /*If the list is not equal to null*/
   if(list != NULL)
   {
     /*Copies the list*/
     VAL_LIST copy = list;
-
+	
     /*While loop*/
     while(copy != NULL)
-    {
+    {//error("list->type = %d, tag = %d", list->type, tag);
       if(list->type != tag)
       {
-	/*Error, return false*/
-	error("Case constant type does not match case expression type");
-	return FALSE;
+		/*Error, return false*/
+		error("Case constant type does not match case expression type");
+		return FALSE;
       }
       /*Moves onto the next element*/
       copy = copy->next;

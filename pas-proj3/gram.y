@@ -76,6 +76,8 @@ int exit_label_curr = -1;
 char* exit_case_labels[100];
 int exit_case_top = -1;
 
+TYPETAG prev_type;
+
 /* Cause the `yydebug' variable to be defined.  */
 #define YYDEBUG 1
 
@@ -137,6 +139,8 @@ void yyerror(const char *);
 %type <y_expr> boolean_expression
 %type <y_valuelist> case_constant_list one_case_constant
 %type <y_caserec> case_element_list case_element
+%type <y_exprlist> index_expression_list
+%type <y_expr> index_expression_item
 
 %type <y_expr> unsigned_number number constant constant_literal
 %type <y_expr> expression actual_parameter static_expression
@@ -434,7 +438,7 @@ enumerator:
   ;
 
 subrange_type: /* builds subrange TYPE */
-    constant LEX_RANGE constant  { $$ = check_subrange($1, $3); }
+    constant LEX_RANGE constant  { $$ = check_subrange($1, $3); /*error("/n/n/n/n/n/nsubrange_type/n/n/n/n/n/n");*/}
 
   ;
 
@@ -576,19 +580,20 @@ one_case_constant:
 						}
 						else 
 							$$ = NULL;
+						
 					  }
   | static_expression LEX_RANGE static_expression {
 							TYPETAG type1, type2; long lo, hi;
-							if(get_case_value($1, &lo, &type1) == TRUE && get_case_value($1, &hi, &type2) == TRUE){
+							if(get_case_value($1, &lo, &type1) == TRUE && get_case_value($3, &hi, &type2) == TRUE){
+								//error("type1 = %d, type2 = %d", type1, type2);
 								if(type1 == type2)
-									new_case_value(type1, lo, hi);
+									$$ = new_case_value(type1, lo, hi);
+									//error("lo %d, hi %d", lo, hi);
 								else{
 									error("Type is not equivalent");
 									$$ = NULL;	
 								}
 							}
-
-
 						}
   ;
 
@@ -732,11 +737,17 @@ case_statement:
 									
 									$2 = make_un_expr(DEREF_OP, $2);
 								}
+								if(ty_query($2->type) == TYFLOAT || ty_query($2->type) == TYDOUBLE)
+									error("Case expression is not of ordinal type");
+
+								prev_type = TYVOID;
 								if(ty_query($2->type) != TYSIGNEDLONGINT){
+									prev_type = ty_query($2->type);
 									EXPR convertedNode = make_un_expr(CONVERT_OP, $2);
 	 								convertedNode->type = ty_build_basic(TYSIGNEDLONGINT);
 									$2 = convertedNode;
 								}
+								
 								encode_expr($2);
 								/*Create empty case record node*/
 								CASE_REC new_case_rec;								 
@@ -749,7 +760,35 @@ case_statement:
 								exit_case_labels[exit_case_top] = exit_case;
 								
 
-							   } case_element_list optional_semicolon_or_else_branch LEX_END { exit_case_top--; b_label($<y_caserec>4.label);}
+							   } 
+	case_element_list			{
+									VAL_LIST val_list_copy = $5.values;
+									//while($<y_caserec>4.type == val_list_copy.type)
+									while(val_list_copy != NULL)
+									{
+										//error("$<y_caserec>4.type - %d", $<y_caserec>4.type);
+										//error("val_list_copy.type - %d", val_list_copy->type);
+										//if($<y_caserec>4.type != val_list_copy->type)
+										//if(prev_type)
+											if(prev_type != TYUNSIGNEDCHAR)
+											{
+												if($<y_caserec>4.type != val_list_copy->type)
+													error("Case constant type does not match case expression type");
+											}
+											else
+											{
+												if(val_list_copy->type != TYUNSIGNEDCHAR)
+												{
+													//error("val_list_copy->type is %d",val_list_copy->type );
+													error("Case constant type does not match case expression type");
+												}
+											}
+										
+										val_list_copy = val_list_copy->next;
+									}
+								}
+
+	optional_semicolon_or_else_branch LEX_END { exit_case_top--; b_label($<y_caserec>4.label);}
   ;
 
 optional_semicolon_or_else_branch:
@@ -770,12 +809,8 @@ case_element:
 										$<y_caserec>$.label = new_symbol();
 										$<y_caserec>$.values = $1;
 										encode_dispatch($1, $<y_caserec>$.label);
-
-									}
-									else error("check_case_values = FALSE");
-								}								
-								else error("case_constant_list is null");
-		
+									}									
+								}
 							}
 							statement { $$ = $<y_caserec>3; b_jump(exit_case_labels[exit_case_top]);  }
   ;
@@ -955,8 +990,8 @@ variable_access_or_typename:
   ;
 
 index_expression_list:
-    index_expression_item
-  | index_expression_list ',' index_expression_item
+    index_expression_item { $$ = expr_prepend($1, NULL); }
+  | index_expression_list ',' index_expression_item { $$ = expr_prepend($3, $1); }
   ;
 
 index_expression_item:
@@ -1042,7 +1077,7 @@ variable_or_function_access_no_id:
   | variable_or_function_access '.' new_identifier {/*Not using*/}
   | '(' expression ')'	{ $$ = $2; }
   | variable_or_function_access pointer_char { $$ = make_un_expr(INDIR_OP,$1); }
-  | variable_or_function_access '[' index_expression_list ']'	{/*Project 3*/}
+  | variable_or_function_access '[' index_expression_list ']'	{ $$ = make_array_access_expr($1, $3); }
   | variable_or_function_access_no_standard_function '(' actual_parameter_list ')' { $$ = make_fcall_expr($1, expr_list_reverse($3));}
   | p_NEW '(' variable_access_or_typename ')' { $$ = make_un_expr(NEW_OP, $3); }
   ;

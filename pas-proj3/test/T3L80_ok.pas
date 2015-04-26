@@ -153,7 +153,7 @@ begin
 
    (* Array access *)
 
-   y := 'a';
+  (* y := 'a';
    i := 1;
    while i <> 9 do begin
       ca[i] := y;
@@ -200,10 +200,10 @@ begin
    end;
 
    print_w;
-   print_newline;
+   print_newline;*)
 
    (* Pascal's triangle *)
-   j := 0;
+  (* j := 0;
    while j <= 10 do begin
       iaa[0][j] := 1;
       j := j+1
@@ -235,6 +235,6 @@ begin
       i := i+1
    end;
 
-   print_iaaa
+   print_iaaa*)
 
 end.
