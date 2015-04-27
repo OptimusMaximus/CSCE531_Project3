@@ -1067,6 +1067,10 @@ EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right) {
 		error("Illegal conversion");
          return make_error_expr();
 	  }
+		else if((right_type == TYARRAY) && (left_type != TYARRAY) || (left_type == TYARRAY) && (right_type != TYARRAY)){
+		error("Illegal conversion");
+         return make_error_expr();
+	  }
 	 //Boolean is TYSIGNEDCHAR
 	  /*else if(left_type == TYSIGNEDCHAR && right_type == TYSIGNEDLONGINT){
 				error("Illegal conversion1");
